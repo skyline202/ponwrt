@@ -1,4 +1,4 @@
-name: Release PonWrt
+name: Release PonWrt (AN7581 Only)
 
 on:
   workflow_dispatch:
@@ -22,16 +22,10 @@ concurrency:
 
 jobs:
   build:
-    name: Build ${{ matrix.target }}
+    name: Build an7581
     runs-on: ubuntu-24.04
     timeout-minutes: 360
     environment: release
-    strategy:
-      fail-fast: false
-      matrix:
-        target:
-          - an7581
-          - an7583
 
     steps:
       - uses: actions/checkout@v6
@@ -61,9 +55,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: dl
-          key: ponwrt-dl-${{ matrix.target }}-${{ hashFiles('feeds.conf.default', 'configs/*.config') }}
+          key: ponwrt-dl-an7581-${{ hashFiles('feeds.conf.default', 'configs/*.config') }}
           restore-keys: |
-            ponwrt-dl-${{ matrix.target }}-
+            ponwrt-dl-an7581-
 
       - name: Install feeds
         run: |
@@ -80,29 +74,29 @@ jobs:
             openssl ec -in private-key.pem -pubout -out public-key.pem
           fi
 
-      - name: Configure ${{ matrix.target }}
+      - name: Configure an7581
         run: |
           ./scripts/kconfig.pl + \
-            "configs/${{ matrix.target }}.config" \
+            "configs/an7581.config" \
             configs/release.config > .config
           make defconfig
 
       - name: Download sources
         run: make download -j"$(nproc)"
 
-      - name: Build ${{ matrix.target }}
+      - name: Build an7581
         run: make -j"$(nproc)"
 
-      - name: Pack ${{ matrix.target }}
+      - name: Pack an7581
         run: |
           mkdir release
-          tar --zstd -cf "release/ponwrt-${{ matrix.target }}.tar.zst" \
-            -C bin/targets/airoha "${{ matrix.target }}"
+          tar --zstd -cf "release/ponwrt-an7581.tar.zst" \
+            -C bin/targets/airoha "an7581"
 
-      - name: Upload ${{ matrix.target }}
+      - name: Upload an7581
         uses: actions/upload-artifact@v4
         with:
-          name: ponwrt-${{ matrix.target }}
+          name: ponwrt-an7581
           path: release/*.tar.zst
           if-no-files-found: error
           retention-days: 7
@@ -118,9 +112,8 @@ jobs:
       - name: Download firmware archives
         uses: actions/download-artifact@v4
         with:
-          pattern: ponwrt-*
+          name: ponwrt-an7581
           path: release
-          merge-multiple: true
 
       - name: Create checksums
         working-directory: release
